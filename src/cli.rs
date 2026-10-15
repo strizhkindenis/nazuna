@@ -2,8 +2,15 @@ use clap::{Parser, Subcommand};
 use ipnet::Ipv4Net;
 use std::{net::Ipv4Addr, path::PathBuf};
 
+const VERSION: &str = concat!(
+    env!("CARGO_PKG_VERSION"),
+    " (",
+    env!("NAZUNA_COMMIT_HASH"),
+    ")"
+);
+
 #[derive(Parser)]
-#[command(name = "nazuna", version, about = "The no-nonsense WireGuard VPN manager. Minimalist, JSON-backed, and instantly ready. 🩸", long_about = None)]
+#[command(name = "nazuna", version = VERSION, about = "The no-nonsense WireGuard VPN manager. Minimalist, JSON-backed, and instantly ready. 🩸", long_about = None)]
 pub struct Cli {
     /// Path to the database file
     #[arg(short, long, default_value = "/etc/nazuna/nazuna.conf")]
