@@ -166,7 +166,11 @@ impl Config {
         let allowed_ips = if self.forwarding {
             "0.0.0.0/0".to_string()
         } else {
-            self.server_net.to_string()
+            format!(
+                "{}/{}",
+                self.server_net.network(),
+                self.server_net.prefix_len()
+            )
         };
         writeln!(w, "AllowedIPs = {allowed_ips}")?;
         writeln!(w, "PersistentKeepalive = 25")
@@ -238,7 +242,7 @@ mod tests {
         assert!(
             String::from_utf8(output)
                 .unwrap()
-                .contains("AllowedIPs = 10.0.0.1/24")
+                .contains("AllowedIPs = 10.0.0.0/24")
         );
 
         let mut forwarding_config = config;
