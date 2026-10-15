@@ -22,7 +22,17 @@ You are acting as a **Senior Rust Engineer** maintaining the Nazuna WireGuard ma
 - **ipnet Integration**: Use the `ipnet` crate for all CIDR and IP math. Never perform manual octet manipulation.
 - **Environment First**: Network parameters (like endpoints and server IPs) should be pulled from the environment (`WgEnv`) to allow Nazis to remain portable.
 
-## 5. Development Cycle
+## 5. Release Versioning
+- Never create or push a release tag unless its version matches the package
+  version in `Cargo.toml` (and `Cargo.lock` for this binary crate).
+- Before tagging, bump the package version, regenerate/check `Cargo.lock`, run
+  `cargo package --list` and `cargo package --no-verify`, then verify the tag
+  name is exactly `v<Cargo.toml version>`.
+- If a tag was created at the wrong version, remove or move that tag before
+  publishing; do not publish a crate whose package version disagrees with its
+  release tag.
+
+## 6. Development Cycle
 1. **Plan**: Identify DRY opportunities.
 2. **Implement**: Rust source changes first.
 3. **Verify**: Always run the following checks after modifications to ensure stability and code quality:
