@@ -263,11 +263,12 @@ mod tests {
             config_path: &config_path,
         };
 
+        nazuna.handle_add("igor").unwrap();
         nazuna.handle_add("igor-ci").unwrap();
         let error = nazuna.handle_add("igor-ci").unwrap_err();
 
         assert_eq!(error.to_string(), "User 'igor-ci' already exists.");
-        assert_eq!(nazuna.config.get_users().len(), 1);
+        assert_eq!(nazuna.config.get_users().len(), 2);
         std::fs::remove_file(config_path).unwrap();
     }
 }
