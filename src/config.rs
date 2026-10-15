@@ -28,6 +28,8 @@ pub struct Config {
     endpoint_port: u16,
     external_interface: String,
     wg_interface: String,
+    #[serde(default)]
+    forwarding: bool,
 }
 
 impl Config {
@@ -56,6 +58,7 @@ impl Config {
             server_net,
             external_interface,
             wg_interface,
+            forwarding: false,
         })
     }
 
@@ -160,7 +163,12 @@ impl Config {
         writeln!(w, "[Peer]")?;
         writeln!(w, "PublicKey = {}", self.server_pub_key)?;
         writeln!(w, "Endpoint = {}:{}", self.endpoint_ip, self.endpoint_port)?;
-        writeln!(w, "AllowedIPs = 0.0.0.0/0")?;
+        let allowed_ips = if self.forwarding {
+            "0.0.0.0/0".to_string()
+        } else {
+            self.server_net.to_string()
+        };
+        writeln!(w, "AllowedIPs = {allowed_ips}")?;
         writeln!(w, "PersistentKeepalive = 25")
     }
 }
@@ -204,6 +212,46 @@ mod tests {
         assert_eq!(config.server_priv_key, "MOCK_PRIVATE_KEY");
         assert_eq!(config.server_pub_key, "MOCK_PUBLIC_KEY");
         assert_eq!(config.wg_interface, "wg0");
+        assert!(!config.forwarding);
+    }
+
+    #[test]
+    fn test_missing_forwarding_defaults_to_false() {
+        let mut value = serde_json::to_value(create_test_config()).unwrap();
+        value.as_object_mut().unwrap().remove("forwarding");
+        let config: Config = serde_json::from_value(value).unwrap();
+
+        assert!(!config.forwarding);
+    }
+
+    #[test]
+    fn test_client_allowed_ips_follow_forwarding() {
+        let config = create_test_config();
+        let user = User {
+            name: "test_user".to_string(),
+            ip: Ipv4Addr::new(10, 0, 0, 2),
+            priv_key: "MOCK_PRIVATE_KEY".to_string(),
+            pub_key: "MOCK_PUBLIC_KEY".to_string(),
+        };
+        let mut output = Vec::new();
+        config.write_client_conf(&mut output, &user).unwrap();
+        assert!(
+            String::from_utf8(output)
+                .unwrap()
+                .contains("AllowedIPs = 10.0.0.1/24")
+        );
+
+        let mut forwarding_config = config;
+        forwarding_config.forwarding = true;
+        let mut output = Vec::new();
+        forwarding_config
+            .write_client_conf(&mut output, &user)
+            .unwrap();
+        assert!(
+            String::from_utf8(output)
+                .unwrap()
+                .contains("AllowedIPs = 0.0.0.0/0")
+        );
     }
 
     #[test]

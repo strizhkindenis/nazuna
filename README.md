@@ -49,6 +49,11 @@ nazuna cat alice
 # Outputs a complete WireGuard config they can import directly
 ```
 
+The database includes a `forwarding` boolean, written as `false` by default.
+When set to `true`, generated client configs route all IPv4 traffic through the
+VPN (`AllowedIPs = 0.0.0.0/0`). When `false` or omitted, clients route only the
+configured server subnet.
+
 ## Other Commands
 
 ```bash
