@@ -217,3 +217,57 @@ fn handle_init<G: KeyGenerator>(
     );
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+    use std::{net::Ipv4Addr, path::PathBuf};
+
+    struct MockKeyGenerator;
+
+    impl KeyGenerator for MockKeyGenerator {
+        fn gen_key(&self) -> Result<String> {
+            Ok("MOCK_PRIVATE_KEY".to_string())
+        }
+
+        fn pub_key(&self, _priv_key: &str) -> Result<String> {
+            Ok("MOCK_PUBLIC_KEY".to_string())
+        }
+    }
+
+    fn test_config_path() -> PathBuf {
+        std::env::temp_dir().join(format!(
+            "nazuna-test-{}-{}.json",
+            std::process::id(),
+            std::thread::current().name().unwrap_or("test")
+        ))
+    }
+
+    #[test]
+    fn add_accepts_new_user_and_rejects_duplicate() {
+        let config_path = test_config_path();
+        let config = Config::try_new(
+            Ipv4Addr::LOCALHOST,
+            51820,
+            None,
+            "10.0.0.1/24".parse().unwrap(),
+            "eth0".to_string(),
+            "wg0".to_string(),
+            &MockKeyGenerator,
+        )
+        .unwrap();
+        let mut nazuna = Nazuna {
+            key_gen: MockKeyGenerator,
+            config,
+            config_path: &config_path,
+        };
+
+        nazuna.handle_add("igor-ci").unwrap();
+        let error = nazuna.handle_add("igor-ci").unwrap_err();
+
+        assert_eq!(error.to_string(), "User 'igor-ci' already exists.");
+        assert_eq!(nazuna.config.get_users().len(), 1);
+        std::fs::remove_file(config_path).unwrap();
+    }
+}
