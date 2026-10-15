@@ -75,9 +75,9 @@ impl<T: KeyGenerator> Nazuna<'_, T> {
     }
 
     fn handle_add(&mut self, name: &str) -> Result<()> {
-        self.config
-            .find_user(name)
-            .with_context(|| format!("User '{name}' already exists."))?;
+        if self.config.find_user(name).is_some() {
+            anyhow::bail!("User '{name}' already exists.");
+        }
         let user = self.config.add_user(name.to_string(), &self.key_gen)?;
         self.save_config()?;
         println!("✅ User '{name}' added with IP {ip}", ip = user.ip);
